@@ -5,7 +5,6 @@ from pathlib import Path
 
 def main(
     output_dir: str = "data",
-    filename: str = "arithmetic_problems.jsonl",
     num_examples: int = 20_000,
     min_value: int = 1_000,
     max_value: int = 10_000,
@@ -60,6 +59,10 @@ def main(
     # Ensure output directory exists
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Construct filename from parameters
+    ops_str = '_'.join(sorted(operations))
+    filename = f"arithmetic_{num_examples}ex_{min_value}-{max_value}_{num_values}vals_{ops_str}.jsonl"
     
     # Construct full output path
     output_path = output_dir / filename
