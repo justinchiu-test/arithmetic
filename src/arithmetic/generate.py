@@ -3,6 +3,7 @@ import numpy as np
 
 
 def main(
+    output_path: str,
     num_examples: int = 20_000,
     min_value: int = 1_000,
     max_value: int = 10_000,
@@ -49,10 +50,14 @@ def main(
         problems.append(problem)
         solutions.append(result)
     
-    return pd.DataFrame({
+    df = pd.DataFrame({
         "problem": problems,
         "solution": solutions
     })
+    
+    # Save to CSV
+    df.to_csv(output_path, index=False)
+    return df
 
 
 if __name__ == "__main__":
