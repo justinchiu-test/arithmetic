@@ -55,9 +55,7 @@ def main(
         "solution": solutions
     })
     
-    # Save to CSV
-    df.to_csv(output_path, index=False)
-    return df
+    df.to_json(output_path, lines=True)
 
 
 if __name__ == "__main__":
