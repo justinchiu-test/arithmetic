@@ -61,7 +61,13 @@ def main(
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Construct filename from parameters
-    ops_str = '_'.join(sorted(operations))
+    op_names = {
+        "+": "plus",
+        "-": "minus",
+        "*": "times",
+        "/": "divide"
+    }
+    ops_str = '_'.join(op_names[op] for op in sorted(operations))
     filename = f"arithmetic_{num_examples}ex_{min_value}-{max_value}_{num_values}vals_{ops_str}.jsonl"
     
     # Construct full output path
