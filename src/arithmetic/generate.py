@@ -1,9 +1,11 @@
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
 
 def main(
-    output_path: str,
+    output_dir: str = "data",
+    filename: str = "arithmetic_problems.jsonl",
     num_examples: int = 20_000,
     min_value: int = 1_000,
     max_value: int = 10_000,
@@ -55,6 +57,12 @@ def main(
         "solution": solutions
     })
     
+    # Ensure output directory exists
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Construct full output path
+    output_path = output_dir / filename
     df.to_json(output_path, lines=True)
 
 
