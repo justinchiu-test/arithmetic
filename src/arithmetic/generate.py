@@ -72,7 +72,7 @@ def main(
     
     # Construct full output path
     output_path = output_dir / filename
-    df.to_json(output_path, lines=True)
+    df.to_json(output_path, orient="records", lines=True)
 
 
 if __name__ == "__main__":
