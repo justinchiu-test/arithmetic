@@ -49,11 +49,11 @@ def main(
                 result /= val
                 
         problems.append(problem)
-        solutions.append(result)
+        solutions.append(str(result))
     
     df = pd.DataFrame({
-        "problem": problems,
-        "solution": solutions
+        "prompt": problems,
+        "completion": solutions
     })
     
     # Ensure output directory exists
