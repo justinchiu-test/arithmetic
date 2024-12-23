@@ -1,3 +1,6 @@
 .aider*
 .env
 __pycache__/
+
+# private
+run.sh
