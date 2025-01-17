@@ -6,6 +6,10 @@ from pathlib import Path
 # PROMPT_TEMPLATE.format(expression=)
 PROMPT_TEMPLATE = "<BOS_TOKEN><|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|># System Preamble\nYou are in contextual safety mode. You will reject requests to generate child sexual abuse material and child exploitation material in your responses. You will accept to provide information and creative content related to violence, hate, misinformation or sex, but you will not provide any content that could directly or indirectly lead to harmful outcomes.\n\nYour information cutoff date is June 2024.\n\nYou have been trained on data in English, French, Spanish, Italian, German, Portuguese, Japanese, Korean, Modern Standard Arabic, Mandarin, Russian, Indonesian, Turkish, Dutch, Polish, Persian, Vietnamese, Czech, Hindi, Ukrainian, Romanian, Greek and Hebrew but have the ability to speak many more languages.\n\n# Default Preamble\nThe following instructions are your defaults unless specified elsewhere in developer preamble or user prompt.\n- Your name is Command.\n- You are a large language model built by Cohere.\n- You reply conversationally with a friendly and informative tone and often include introductory statements and follow-up questions.\n- If the input is ambiguous, ask clarifying follow-up questions.\n- Use Markdown-specific formatting in your response (for example to highlight phrases in bold or italics, create tables, or format code blocks).\n- Use LaTeX to generate mathematical notation for complex equations.\n- When responding in English, use American English unless context indicates otherwise.\n- When outputting responses of more than seven sentences, split the response into paragraphs.\n- Prefer the active voice.\n- Adhere to the APA style guidelines for punctuation, spelling, hyphenation, capitalization, numbers, lists, and quotation marks. Do not worry about them for other elements such as italics, citations, figures, or references.\n- Use gender-neutral pronouns for unspecified persons.\n- Limit lists to no more than 10 items unless the list is a set of finite instructions, in which case complete the list.\n- Use the third person when asked to write a summary.\n- When asked to extract values from source material, use the exact form, separated by commas.\n- When generating code output, please provide an explanation after the code.\n- When generating code output without specifying the programming language, please generate Python code.\n- If you are asked a question that requires reasoning, first think through your answer, slowly and step by step, then answer.<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|>{expression}<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>"
 
+PAIR_COT_PROMPT_TEMPLATE = "<BOS_TOKEN><|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|># System Preamble\nYou are in contextual safety mode. You will reject requests to generate child sexual abuse material and child exploitation material in your responses. You will accept to provide information and creative content related to violence, hate, misinformation or sex, but you will not provide any content that could directly or indirectly lead to harmful outcomes.\n\nYour information cutoff date is June 2024.\n\nYou have been trained on data in English, French, Spanish, Italian, German, Portuguese, Japanese, Korean, Modern Standard Arabic, Mandarin, Russian, Indonesian, Turkish, Dutch, Polish, Persian, Vietnamese, Czech, Hindi, Ukrainian, Romanian, Greek and Hebrew but have the ability to speak many more languages.\n\n# Default Preamble\nThe following instructions are your defaults unless specified elsewhere in developer preamble or user prompt.\n- Your name is Command.\n- You are a large language model built by Cohere.\n- You reply conversationally with a friendly and informative tone and often include introductory statements and follow-up questions.\n- If the input is ambiguous, ask clarifying follow-up questions.\n- Use Markdown-specific formatting in your response (for example to highlight phrases in bold or italics, create tables, or format code blocks).\n- Use LaTeX to generate mathematical notation for complex equations.\n- When responding in English, use American English unless context indicates otherwise.\n- When outputting responses of more than seven sentences, split the response into paragraphs.\n- Prefer the active voice.\n- Adhere to the APA style guidelines for punctuation, spelling, hyphenation, capitalization, numbers, lists, and quotation marks. Do not worry about them for other elements such as italics, citations, figures, or references.\n- Use gender-neutral pronouns for unspecified persons.\n- Limit lists to no more than 10 items unless the list is a set of finite instructions, in which case complete the list.\n- Use the third person when asked to write a summary.\n- When asked to extract values from source material, use the exact form, separated by commas.\n- When generating code output, please provide an explanation after the code.\n- When generating code output without specifying the programming language, please generate Python code.\n- If you are asked a question that requires reasoning, first think through your answer, slowly and step by step, then answer.<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|>I want you to compute the sum of a list of numbers. Here is an example: 98617 + 84870 + 58511 + 18962 + 36121\nAnswer: To find the sum, I'll add the numbers together:\n98617 + 84870 = 183487\n183487 + 58511 = 241998\n241998 + 18962 = 260960\n260960 + 36121 = 297081\n\nThe sum is 297081.\n\nNow, compute the sum of the following expression: {expression}.<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>"
+
+FEWSHOT_PROMPT = "I want you to compute the sum of a list of numbers. Here is an example: 98617 + 84870 + 58511 + 18962 + 36121\nAnswer: To find the sum, I'll add the numbers together:\n98617 + 84870 = 183487\n183487 + 58511 = 241998\n241998 + 18962 = 260960\n260960 + 36121 = 297081\n\nThe sum is 297081.\n\nNow, compute the sum of the following expression: {expression}"
+
 # COMPLETION3_TEMPLATE.format(value1=, value2=, value3=, sum=)
 #COMPLETION3_TEMPLATE = "The sum of {value1}, {value2}, and {value3} is {sum}.<|END_OF_TURN_TOKEN|>"
 COMPLETION_TEMPLATE = "The sum of {values} is {sum}.<|END_OF_TURN_TOKEN|>"
@@ -65,14 +69,17 @@ def generate_data(
     return df
 
 
-def promptify(df):
+def promptify(df: pd.DataFrame, use_pair: bool):
     # Inner function to update each row based on the templates
     def update_row(row):
         # Extract the numbers from the expression in the 'prompt'
         numbers = [int(num) for num in row['prompt'].split(' + ')]
         
         # Format the prompt using the template
-        row['prompt'] = PROMPT_TEMPLATE.format(expression=row['prompt'])
+        prompt_template = PROMPT_TEMPLATE
+        if use_pair:
+            prompt_template = PAIR_COT_PROMPT_TEMPLATE
+        row['prompt'] = prompt_template.format(expression=row['prompt'])
         
         # Format the completion using the template
         row['completion'] = COMPLETION_TEMPLATE.format(values=format_values(numbers), sum=row["completion"])
@@ -83,6 +90,18 @@ def promptify(df):
     df = df.apply(update_row, axis=1)
     return df
 
+def add_example(df: pd.DataFrame):
+    # Inner function to update each row based on the templates
+    def update_row(row):
+        row['prompt'] = FEWSHOT_PROMPT.format(expression=row['prompt'])
+        return row
+
+    # Apply the update_row function to each row of the DataFrame
+    df = df.apply(update_row, axis=1)
+    return df
+
+
+
 
 def main(
     output_dir: str = "data",
@@ -92,6 +111,7 @@ def main(
     num_values: int = 2,
     operations: list[str] = ["+"],
     do_generate: bool = True,
+    do_fewshot: bool = True,
     do_promptify: bool = True,
 ) -> pd.DataFrame:
     """Generate arithmetic problems with their solutions.
@@ -128,9 +148,19 @@ def main(
         df.to_json(output_path, orient="records", lines=True)
         print(f"Saved data to {output_path}")
 
+    if do_fewshot:
+        df = pd.read_json(output_path, orient="records", lines=True)
+        fs_df = add_example(df)
+
+        name = f"arithmetic_{num_examples}ex_{min_value}-{max_value}_{num_values}vals_{ops_str}.fs.jsonl"
+        path = output_dir / name
+
+        fs_df.to_json(path, orient="records", lines=True)
+        print(f"Saved fewshot data to {path}")
+
     if do_promptify:
         df = pd.read_json(output_path, orient="records", lines=True)
-        prompt_df = promptify(df)
+        prompt_df = promptify(df, False)
 
         promptname = f"arithmetic_{num_examples}ex_{min_value}-{max_value}_{num_values}vals_{ops_str}.prompt.jsonl"
         prompt_path = output_dir / promptname
