@@ -3,5 +3,5 @@
 __pycache__/
 
 # private
-run.sh
+run_private.sh
 data/
