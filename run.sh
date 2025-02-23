@@ -1,7 +1,7 @@
 #!/bin/bash
 
-do_generate=False
-do_promptify=False
+do_generate=True
+do_promptify=True
 do_fewshot=True
 
 #for i in 2 3 4 5
@@ -15,6 +15,6 @@ do
     # training set of 20k
     uv run python -m arithmetic.generate --num_examples 20000 --min_value 10_000 --max_value 100_000 --num_values $i --do_generate $do_generate --do_promptify $do_promptify --do_fewshot $do_fewshot
     # test set of 10k
-    #uv run python -m arithmetic.generate --num_examples 10000 --min_value 10_000 --max_value 100_000 --num_values $i
+    uv run python -m arithmetic.generate --num_examples 10000 --min_value 10_000 --max_value 100_000 --num_values $i
 done
 

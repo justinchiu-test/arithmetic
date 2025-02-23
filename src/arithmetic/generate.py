@@ -1,6 +1,11 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import random
+
+
+random.seed(123456)
+np.random.seed(123456)
 
 
 # PROMPT_TEMPLATE.format(expression=)
@@ -11,7 +16,7 @@ PAIR_COT_PROMPT_TEMPLATE = "<BOS_TOKEN><|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|># 
 FEWSHOT_PROMPT = "I want you to compute the sum of a list of numbers. Here is an example: 98617 + 84870 + 58511 + 18962 + 36121\nAnswer: To find the sum, I'll add the numbers together:\n98617 + 84870 = 183487\n183487 + 58511 = 241998\n241998 + 18962 = 260960\n260960 + 36121 = 297081\n\nThe sum is 297081.\n\nNow, compute the sum of the following expression: {expression}"
 
 # COMPLETION3_TEMPLATE.format(value1=, value2=, value3=, sum=)
-#COMPLETION3_TEMPLATE = "The sum of {value1}, {value2}, and {value3} is {sum}.<|END_OF_TURN_TOKEN|>"
+# COMPLETION3_TEMPLATE = "The sum of {value1}, {value2}, and {value3} is {sum}.<|END_OF_TURN_TOKEN|>"
 COMPLETION_TEMPLATE = "The sum of {values} is {sum}.<|END_OF_TURN_TOKEN|>"
 
 
@@ -35,18 +40,18 @@ def generate_data(
 ):
     problems = []
     solutions = []
-    
+
     for _ in range(num_examples):
         # Generate random numbers
         values = np.random.randint(min_value, max_value, size=num_values)
-        
+
         # Choose random operation for each pair
-        ops = np.random.choice(operations, size=num_values-1)
-        
+        ops = np.random.choice(operations, size=num_values - 1)
+
         # Build the problem string and compute solution
         problem = str(values[0])
         result = values[0]
-        
+
         for i, (op, val) in enumerate(zip(ops, values[1:])):
             problem += f" {op} {val}"
             if op == "+":
@@ -57,14 +62,11 @@ def generate_data(
                 result *= val
             elif op == "/":
                 result /= val
-                
+
         problems.append(problem)
         solutions.append(str(result))
-    
-    df = pd.DataFrame({
-        "prompt": problems,
-        "completion": solutions
-    })
+
+    df = pd.DataFrame({"prompt": problems, "completion": solutions})
 
     return df
 
@@ -73,34 +75,35 @@ def promptify(df: pd.DataFrame, use_pair: bool):
     # Inner function to update each row based on the templates
     def update_row(row):
         # Extract the numbers from the expression in the 'prompt'
-        numbers = [int(num) for num in row['prompt'].split(' + ')]
-        
+        numbers = [int(num) for num in row["prompt"].split(" + ")]
+
         # Format the prompt using the template
         prompt_template = PROMPT_TEMPLATE
         if use_pair:
             prompt_template = PAIR_COT_PROMPT_TEMPLATE
-        row['prompt'] = prompt_template.format(expression=row['prompt'])
-        
+        row["prompt"] = prompt_template.format(expression=row["prompt"])
+
         # Format the completion using the template
-        row['completion'] = COMPLETION_TEMPLATE.format(values=format_values(numbers), sum=row["completion"])
-        
+        row["completion"] = COMPLETION_TEMPLATE.format(
+            values=format_values(numbers), sum=row["completion"]
+        )
+
         return row
 
     # Apply the update_row function to each row of the DataFrame
     df = df.apply(update_row, axis=1)
     return df
+
 
 def add_example(df: pd.DataFrame):
     # Inner function to update each row based on the templates
     def update_row(row):
-        row['prompt'] = FEWSHOT_PROMPT.format(expression=row['prompt'])
+        row["prompt"] = FEWSHOT_PROMPT.format(expression=row["prompt"])
         return row
 
     # Apply the update_row function to each row of the DataFrame
     df = df.apply(update_row, axis=1)
     return df
-
-
 
 
 def main(
@@ -115,36 +118,37 @@ def main(
     do_promptify: bool = True,
 ) -> pd.DataFrame:
     """Generate arithmetic problems with their solutions.
-    
+
     Args:
         num_examples: Number of problems to generate
         min_value: Minimum value for random numbers
         max_value: Maximum value for random numbers
         num_values: Number of values in each problem
         operations: List of operations to use (+, -, *, /)
-        
+
     Returns:
         DataFrame with problems and solutions
     """
-    
+
     # Ensure output directory exists
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Construct filename from parameters
-    op_names = {
-        "+": "plus",
-        "-": "minus",
-        "*": "times",
-        "/": "divide"
-    }
-    ops_str = '_'.join(op_names[op] for op in sorted(operations))
+    op_names = {"+": "plus", "-": "minus", "*": "times", "/": "divide"}
+    ops_str = "_".join(op_names[op] for op in sorted(operations))
     filename = f"arithmetic_{num_examples}ex_{min_value}-{max_value}_{num_values}vals_{ops_str}.jsonl"
     # Construct full output path
     output_path = output_dir / filename
 
     if do_generate:
-        df = generate_data(num_examples=num_examples, min_value=min_value, max_value=max_value, num_values=num_values, operations=operations)
+        df = generate_data(
+            num_examples=num_examples,
+            min_value=min_value,
+            max_value=max_value,
+            num_values=num_values,
+            operations=operations,
+        )
         df.to_json(output_path, orient="records", lines=True)
         print(f"Saved data to {output_path}")
 
@@ -171,4 +175,5 @@ def main(
 
 if __name__ == "__main__":
     from strictfire import StrictFire
+
     StrictFire(main)
