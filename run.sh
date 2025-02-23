@@ -6,7 +6,7 @@ do_fewshot=True
 
 #for i in 2 3 4 5
 #for i in 3
-for i in 5 7 9
+for i in 3 5 7 9
 do
     # training set of 100k
     uv run python -m arithmetic.generate --num_examples 100000 --min_value 10_000 --max_value 100_000 --num_values $i --do_generate $do_generate --do_promptify $do_promptify --do_fewshot $do_fewshot
